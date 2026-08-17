@@ -48,7 +48,7 @@
         <hr />
         <div class="table-responsive">
             <table class="table table-bordered table-hover text-center align-middle">
-                <caption class="caption-top text-center fw-bold text-uppercase bg-dark text-light py-2">Task Completed</caption>
+                <caption class="caption-top text-center fw-bold text-uppercase bg-dark text-light py-2">Task Delayed</caption>
                 <thead class="table-dark text-uppercase">
                 <tr>
                     <th>Task ID</th>
@@ -56,21 +56,21 @@
                     <th>Task</th>
                     <th>Deadline</th>
                     <th>Status</th>
-                    <th>Mark as Complete</th>
+<!--                    <th>Mark as Complete</th>-->
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="task : ${taskList}">
                     <td th:text="${task.id}"></td>
-                    <td th:text="${task.taskName}"></td>
                     <td th:text="${task.studentName}"></td>
+                    <td th:text="${task.taskName}"></td>
                     <td th:text="${task.deadline}"></td>
                     <td th:text="${task.status}">
 
                     </td>
-                    <td>
-                        <input type="checkbox" th:checked="${task.status == 'Completed'}"/>
-                    </td>
+<!--                    <td>-->
+<!--                        <input type="checkbox" th:checked="${task.status == 'Completed'}"/>-->
+<!--                    </td>-->
                 </tr>
                 </tbody>
             </table>

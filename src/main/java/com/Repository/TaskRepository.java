@@ -11,6 +11,6 @@ import java.util.List;
 public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByUser(User user);
     List<Task> findByStudentName(String name);
-    List<Task> findByUserNameAndStatus(String name, String status);
+    List<Task> findByStudentNameAndStatus(String name, String status);
 
 }

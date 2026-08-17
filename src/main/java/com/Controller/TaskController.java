@@ -40,33 +40,78 @@ public class TaskController {
 //        this.userService = userService;
 //    }
 
+//    @GetMapping("/dashboard")
+//    public String viewDashboard(Model model, HttpSession session) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//
+//        String loginSuccess = (String) session.getAttribute("loginSuccess");
+//        if (loginSuccess != null) {
+//            model.addAttribute("loginSuccess", loginSuccess);
+//            session.removeAttribute("loginSuccess"); // remove it after showing once
+//        }
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//        List<Task> taskList = taskRepository.findByUser(user);
+//        model.addAttribute("taskList", taskList);
+//        return "dashboard";
+//    }
+//
+//    @GetMapping("/add-task")
+//    public String showAddTaskForm(Model model, HttpSession session) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//
+//        model.addAttribute("task", new Task());
+//        model.addAttribute("names", userService.getName());
+//        return "dashboard";
+//    }
+//
+//    @PostMapping("/add-task")
+//    public String addTask(@ModelAttribute("task") Task task,
+//                          HttpSession session,
+//                          Model model) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//
+//        try {
+//            taskService.addTask(task, user);
+//            return "redirect:/dashboard";
+//        } catch (Exception e) {
+//            model.addAttribute("error", "Failed to add task: " + e.getMessage());
+//            model.addAttribute("names", userService.getName());
+//            return "add_task";
+//        }
+//    }
+
     @GetMapping("/dashboard")
     public String viewDashboard(Model model, HttpSession session) {
         User user = (User) session.getAttribute("loggedInUser");
 
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        // Flash login success message
         String loginSuccess = (String) session.getAttribute("loginSuccess");
         if (loginSuccess != null) {
             model.addAttribute("loginSuccess", loginSuccess);
-            session.removeAttribute("loginSuccess"); // remove it after showing once
+            session.removeAttribute("loginSuccess");
         }
-        if (user == null) {
-            return "redirect:/login";
-        }
+
+        // Task list for current user
         List<Task> taskList = taskRepository.findByUser(user);
         model.addAttribute("taskList", taskList);
+
+        //  Important for modal form
+        model.addAttribute("task", new Task()); // for form binding
+        model.addAttribute("names", userService.getName()); // for student dropdown
+
         return "dashboard";
-    }
-
-    @GetMapping("/add-task")
-    public String showAddTaskForm(Model model, HttpSession session) {
-        User user = (User) session.getAttribute("loggedInUser");
-        if (user == null) {
-            return "redirect:/login";
-        }
-
-        model.addAttribute("task", new Task());
-        model.addAttribute("names", userService.getName());
-        return "add_task";
     }
 
     @PostMapping("/add-task")
@@ -79,19 +124,74 @@ public class TaskController {
         }
 
         try {
+            // Save the task
             taskService.addTask(task, user);
             return "redirect:/dashboard";
         } catch (Exception e) {
-            model.addAttribute("error", "Failed to add task: " + e.getMessage());
+            // Error occurred, reload dashboard with modal open
+            List<Task> taskList = taskRepository.findByUser(user);
+            model.addAttribute("taskList", taskList);
+            model.addAttribute("task", task); // keep user-filled form data
             model.addAttribute("names", userService.getName());
-            return "add_task";
+            model.addAttribute("error", "Failed to add task: " + e.getMessage());
+            model.addAttribute("openModal", true); // signal to reopen modal
+
+            return "dashboard";
         }
     }
 
+
+//    @GetMapping("/tasks/edit/{id}")
+//    public String showEditForm(@PathVariable Long id,
+//                               Model model,
+//                               HttpSession session) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//
+//        Task task = taskService.getTaskById(id);
+//        if (task == null) {
+//            return "redirect:/dashboard";
+//        }
+//
+//        //  This must be actual task with valid id
+//        model.addAttribute("task", task);
+//        model.addAttribute("names", userService.getName());
+//        return "edit_task";
+//    }
+//
+//    @PostMapping("/tasks/edit/{id}")
+//    public String updateTask(@PathVariable Long id,
+//                             @ModelAttribute("task") Task updatedTask,
+//                             HttpSession session,
+//                             Model model) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//
+//
+//        taskService.updateTask(id, updatedTask, user);
+//        return "redirect:/dashboard";
+//    }
+//
+//    @PostMapping("/tasks/delete/{id}")
+//    public String deleteTask(@PathVariable Long id, HttpSession session) {
+//        User user = (User) session.getAttribute("loggedInUser");
+//        if (user == null) {
+//            return "redirect:/login";
+//        }
+//
+//        taskService.deleteTaskById(id);
+//        return "redirect:/dashboard";
+//    }
+
+    // Open Edit Task Modal from Dashboard
     @GetMapping("/tasks/edit/{id}")
-    public String showEditForm(@PathVariable Long id,
-                               Model model,
-                               HttpSession session) {
+    public String showEditTaskModal(@PathVariable Long id,
+                                    HttpSession session,
+                                    Model model) {
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) {
             return "redirect:/login";
@@ -99,14 +199,17 @@ public class TaskController {
 
         Task task = taskService.getTaskById(id);
         if (task == null) {
+            model.addAttribute("error", "Task not found.");
             return "redirect:/dashboard";
         }
 
-        //  This must be actual task with valid id
-        model.addAttribute("task", task);
-        model.addAttribute("names", userService.getName());
-        return "edit_task";
+        model.addAttribute("task", task); // Correct
+        model.addAttribute("names", userService.getName()); // For dropdown
+        model.addAttribute("openEditModal", true); //  For showing modal
+//        model.addAttribute("taskList", taskRepository.findByUser(user)); //  For dashboard
+        return "dashboard";
     }
+
 
     @PostMapping("/tasks/edit/{id}")
     public String updateTask(@PathVariable Long id,
@@ -118,10 +221,10 @@ public class TaskController {
             return "redirect:/login";
         }
 
-
         taskService.updateTask(id, updatedTask, user);
         return "redirect:/dashboard";
     }
+
 
     @PostMapping("/tasks/delete/{id}")
     public String deleteTask(@PathVariable Long id, HttpSession session) {
@@ -133,6 +236,7 @@ public class TaskController {
         taskService.deleteTaskById(id);
         return "redirect:/dashboard";
     }
+
 
     @GetMapping("/studentdashboard")
     public String showStudentDashboard(Model model, HttpSession session) {
@@ -165,9 +269,9 @@ public class TaskController {
         }
 
         // Filter by student name
-        List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "in Progress");
+        List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "In Progress");
         model.addAttribute("taskList", tasks);
-        return "/InProgress";
+        return "InProgress";
     }
 
     @GetMapping("/Completed")
@@ -181,7 +285,7 @@ public class TaskController {
         // Filter by student name
         List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "Completed");
         model.addAttribute("taskList", tasks);
-        return "/Completed";
+        return "Completed";
     }
 
     @GetMapping("/NotStarted")
@@ -193,9 +297,9 @@ public class TaskController {
         }
 
         // Filter by student name
-        List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "not Started");
+        List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "Not Started");
         model.addAttribute("taskList", tasks);
-        return "/NotStarted";
+        return "NotStarted";
     }
 
     @GetMapping("/Delayed")
@@ -209,7 +313,7 @@ public class TaskController {
         // Filter by student name
         List<Task> tasks = taskService.getTasksByStudentNameAndStatus(user.getName(), "Delayed");
         model.addAttribute("taskList", tasks);
-        return "/Delayed";
+        return "Delayed";
     }
 
     @PostMapping("/update-status")

@@ -55,7 +55,7 @@ public class TaskService {
 
 
     public List<Task> getTasksByStudentNameAndStatus(String name, String status) {
-        return taskRepository.findByUserNameAndStatus(name, status);
+        return taskRepository.findByStudentNameAndStatus(name, status);
     }
 
     //  Your new method to handle status update
